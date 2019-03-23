@@ -1,0 +1,51 @@
+stages:
+- test
+- container
+- deploy
+
+phpunit:
+  image: phpunit/phpunit
+  stage: test
+  script:
+    - phpunit --bootstrap vendor/autoload.php --testdox tests
+
+image_build:
+  stage: release
+  image:
+    name: docker:latest
+    entrypoint: ["/bin/sh", "-c"]
+  variables:
+    DOCKER_HOST: tcp://localhost:2375
+  services:
+    - docker:dind
+  script:
+    - docker info
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    - docker build -t "${CI_REGISTRY_IMAGE}:latest" .
+    - docker tag "${CI_REGISTRY_IMAGE}:latest" "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}"
+    - test ! -z "${CI_COMMIT_TAG}" && docker push "${CI_REGISTRY_IMAGE}:latest"
+    - docker push "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}"
+
+deploy:
+  image:
+    name: lachlanevenson/k8s-kubectl:latest
+    entrypoint: ["/bin/sh", "-c"]
+  stage: deploy
+  environment:
+    name: live
+    url: https://live-presentation-gitlab-k8s.example.com
+  only:
+    - tags
+  when: manual
+  script:
+    - kubectl version
+    - cd manifests/
+    # Poor mans templating
+    - sed -i "s/__CI_REGISTRY_IMAGE__/${CI_REGISTRY_IMAGE}:latest/" deployment.yaml
+    - sed -i "s/__CI_ENVIRONMENT_SLUG__/${CI_ENVIRONMENT_SLUG}/" deployment.yaml ingress.yaml service.yaml
+    - sed -i "s/__VERSION__/${CI_COMMIT_REF_NAME}/" deployment.yaml ingress.yaml service.yaml
+    - kubectl apply -f deployment.yaml
+    - kubectl apply -f service.yaml
+    - kubectl apply -f ingress.yaml
+    - kubectl rollout status -f deployment.yaml
+    - kubectl get all,ing -l ref=${CI_ENVIRONMENT_SLUG}

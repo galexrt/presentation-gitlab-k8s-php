@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presentation-gitlab-k8s-__CI_ENVIRONMENT_SLUG__
+  labels:
+    app: presentation-gitlab-k8s
+    ref: __CI_ENVIRONMENT_SLUG__
+    track: stable
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: presentation-gitlab-k8s
+      ref: __CI_ENVIRONMENT_SLUG__
+  template:
+    metadata:
+      labels:
+        app: presentation-gitlab-k8s
+        ref: __CI_ENVIRONMENT_SLUG__
+        track: stable
+    spec:
+      imagePullSecrets:
+        - name: regsecret
+      containers:
+      - name: app
+        image: __CI_REGISTRY_IMAGE__:__VERSION__
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /healthz.php
+            port: 80
+          initialDelaySeconds: 3
+          timeoutSeconds: 2
+        readinessProbe:
+          httpGet:
+            path: /healthz.php
+            port: 80
+          initialDelaySeconds: 3
+          timeoutSeconds: 2

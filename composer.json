@@ -1,0 +1,16 @@
+{
+    "name": "atrost/presentation-gitlab-k8s-php",
+    "description": "Example PHP Application with CI through GitLab CI.",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alexander Trost",
+            "email": "galexrt@googlemail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {"Acme\\": "src/"}
+    }
+}
