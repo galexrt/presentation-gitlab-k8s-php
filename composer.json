@@ -9,7 +9,12 @@
             "email": "galexrt@googlemail.com"
         }
     ],
-    "require": {},
+    "require": {
+        "php": "^8.5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.0"
+    },
     "autoload": {
         "psr-4": {"Acme\\": "src/"}
     }
